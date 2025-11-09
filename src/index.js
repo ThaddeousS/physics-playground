@@ -81,7 +81,6 @@ Events.on(engine, 'beforeUpdate', () => {
 
        const bullet = new Bullet({
             position: { x: player.body.position.x + bulletOffset, y: player.body.position.y },
-            size: { x: 5, y: 25 },
             speed: 2,
        });
 

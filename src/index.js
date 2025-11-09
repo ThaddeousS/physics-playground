@@ -1,13 +1,18 @@
 // Destructure Matter.js modules for easier access
-const { Engine, Render, Runner, Bodies, Composite } = Matter;
+const { Engine, Render, Runner, Bodies, Body, Composite, Events } = Matter;
 
 // Create a Matter.js engine
 const engine = Engine.create();
+
+const canvas = document.getElementById('game-canvas');
+
+console.log('GETTING ELEMENT CANVAS: ', canvas);
 
 // Create a renderer to display the simulation on a canvas
 const render = Render.create({
     element: document.body, // Or a specific HTML element
     engine: engine,
+    canvas: canvas,
     options: {
         width: 1024,
         height: 768,
@@ -17,8 +22,8 @@ const render = Render.create({
 });
 
 // Create some physical bodies
-const player = new Player();
-const enemy = new Enemy();
+const player = new Player({ render, engine });
+const enemy = new Enemy({ render, engine });
 const ground = Bodies.rectangle(400, 800, 1500, 60, { isStatic: true }); // Static body won't move
 const roof = Bodies.rectangle(400, 0, 1500, 60, { isStatic: true }); // Static body won't move
 const wall = Bodies.rectangle(0, 580, 60, 1500, { isStatic: true }); // Static body won't move
@@ -36,7 +41,7 @@ document.addEventListener('keyup', (event) => {
 
 let bulletDirection = 'none';
 
-Matter.Events.on(engine, 'beforeUpdate', () => {
+Events.on(engine, 'beforeUpdate', () => {
     if(keys['ArrowLeft']) {
         bulletDirection = 'left';
         player.move('left');
@@ -77,29 +82,43 @@ Matter.Events.on(engine, 'beforeUpdate', () => {
        const bullet = new Bullet({
             position: { x: player.body.position.x + bulletOffset, y: player.body.position.y },
             size: { x: 5, y: 25 },
-            speed: 2
+            speed: 2,
        });
 
-       Matter.Body.applyForce(bullet.body, bullet.body.position, { x: bulletSpeed, y: 0 });
+       Body.applyForce(bullet.body, bullet.body.position, { x: bulletSpeed, y: 0 });
        Composite.add(engine.world, [bullet.body]);
+    }
+
+    if(enemy.removed) {
+        Composite.remove(engine.world, enemy.body);
+    }
+
+    if(player.removed) {
+        Composite.remove(engine.world, player.body);
     }
 });
 
-// Add bodies to the world
-Composite.add(engine.world, 
-    [
-        player.body, 
-        enemy.body, 
-        ground,
-        wall,
-        wall2,
-        roof
-    ]
-);
+let hasRun = false;
 
-// Run the renderer
-Render.run(render);
+if(!hasRun) {
+    // Add bodies to the world
+    Composite.add(engine.world, 
+        [
+            player.body, 
+            enemy.body, 
+            ground,
+            wall,
+            wall2,
+            roof
+        ]
+    );
 
-// Create a runner to update the engine
-const runner = Runner.create();
-Runner.run(runner, engine);
+    // Run the renderer
+    Render.run(render);
+
+    // Create a runner to update the engine
+    const runner = Runner.create();
+    Runner.run(runner, engine);
+
+    hasRun = true;
+}
